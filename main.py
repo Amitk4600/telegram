@@ -12,7 +12,7 @@ if current_hour != 9:
     print(
         f"⏭️ Script execution skipped. Current hour is {current_hour} UTC. Only runs at 9 AM UTC."
     )
-    # exit(0)
+    exit(0)
 
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
