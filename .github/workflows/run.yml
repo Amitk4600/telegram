@@ -1,0 +1,40 @@
+name: Amazon Scraper Auto
+
+on:
+  schedule:
+    - cron: "0 9 * * *"   
+  workflow_dispatch:
+
+jobs:
+  run-script:
+    runs-on: ubuntu-latest
+
+    env:
+      TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+      CHAT_ID: ${{ secrets.CHAT_ID }}
+      AFFILIATE_TAG: ${{ secrets.AFFILIATE_TAG }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          playwright install firefox
+          playwright install-deps
+
+      # Disable Sandbox (playwright bug fix on GitHub Actions)
+      - name: Allow Playwright Without Sandbox
+        run: |
+          sudo sysctl -w kernel.unprivileged_userns_clone=1
+
+      - name: Run Scraper
+        env:
+          DISPLAY: :99
+        run: python main.py
