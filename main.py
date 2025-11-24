@@ -5,18 +5,22 @@ from datetime import datetime, timezone, timedelta
 import os
 import random
 
-# Check if current time is within execution window (6 AM - 7 AM UTC)
+MAX_PRODUCTS = 50  # Maximum 50 products post karega
+EXECUTION_HOURS = 1
+
+# Run only during allowed window (9 AM UTC)
 current_hour = datetime.now(timezone.utc).hour
 print(f"Current UTC hour: {current_hour}")
 if current_hour != 9:
-    print(
-        f"⏭️ Script execution skipped. Current hour is {current_hour} UTC. Only runs at 9 AM UTC."
-    )
+    print(f"⏭️ Not running. Allowed only at 9 AM UTC.")
     exit(0)
+TELEGRAM_TOKEN = "8390539844:AAHI9syLNNDQw4bSqyYHxJtnM4JDOqJWa2s"
+CHAT_ID = "@crystabloom"
+AFFILIATE_TAG = "crystabloom-21"
 
-TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
-CHAT_ID = os.getenv("CHAT_ID")
-AFFILIATE_TAG = os.getenv("AFFILIATE_TAG")
+# TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
+# CHAT_ID = os.getenv("CHAT_ID")
+# AFFILIATE_TAG = os.getenv("AFFILIATE_TAG")
 
 CATEGORIES = [
     # --- Vitamins, Minerals & Supplements ---
@@ -372,226 +376,74 @@ CATEGORIES = [
 
 # def shorten_link(long_url):
 #     try:
+
 #         r = requests.get("https://tinyurl.com/api-create.php", params={"url": long_url})
-#         return r.text if r.status_code == 200 else long_url
-#     except:
+#         if r.status_code == 200:
+
+#             return r.text
+
+#         return long_url
+#     except Exception as e:
+
 #         return long_url
 
 
 # def send_to_telegram(text, image_url=None):
 #     try:
+
 #         url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendPhoto"
 #         payload = {"chat_id": CHAT_ID, "caption": text, "parse_mode": "HTML"}
+
 #         files = {"photo": requests.get(image_url).content} if image_url else None
-#         requests.post(url, data=payload, files=files)
-#         print("[+] Posted to Telegram")
+#         r = requests.post(url, data=payload, files=files)
+
 #     except Exception as e:
-#         print("Telegram Error:", e)
+#         print("Telegram send error:", e)
 
 
 # def save_product(data):
-#     with open(SCRAPED_FILE, "a", encoding="utf-8") as f:
-#         f.write(str(data) + "\\n")
 
-
-# async def scrape_amazon_item(page):
-#     async def safe(selector):
-#         try:
-#             return (await page.inner_text(selector)).strip()
-#         except:
-#             return "Not Available"
-
-#     title = await safe("#productTitle")
-#     price = await safe(".a-price .a-offscreen")
-#     rating = await safe("span.a-icon-alt")
-
-#     try:
-#         desc = (await page.inner_text("#feature-bullets")).strip()
-#     except:
-#         desc = "No description available"
-
-#     try:
-#         img = await page.get_attribute("#landingImage", "src")
-#     except:
-#         img = None
-
-#     return title, price, rating, desc, img
-
-
-# async def main():
-#     print("[+] Starting Amazon Scraper on Railway…")
-
-#     async with async_playwright() as p:
-#         browser = await p.firefox.launch(headless=True)
-#         page = await browser.new_page()
-
-#         while True:
-#             random.shuffle(CATEGORIES)
-
-#             for q in CATEGORIES:
-#                 print(f"\\n[+] Category: {q}")
-
-#                 page_num = 1
-#                 while True:
-#                     search_url = f"https://www.amazon.in/s?k={q}&page={page_num}"
-#                     await page.goto(search_url, timeout=60000)
-#                     await page.evaluate(
-#                         "window.scrollBy(0, document.body.scrollHeight)"
-#                     )
-#                     await asyncio.sleep(2)
-
-#                     links = await page.query_selector_all(
-#                         "a.a-link-normal.s-no-outline"
-#                     )
-#                     urls = []
-
-#                     for l in links:
-#                         href = await l.get_attribute("href")
-#                         if href and "/dp/" in href:
-#                             dp = href.split("/dp/")[1].split("/")[0]
-#                             urls.append(f"https://www.amazon.in/dp/{dp}")
-
-#                     new_products = [
-#                         u for u in urls if u.split("/dp/")[1] not in scraped_ids
-#                     ]
-
-#                     if not new_products:
-#                         break
-
-#                     random.shuffle(new_products)
-
-#                     for u in new_products:
-#                         product_id = u.split("/dp/")[1]
-#                         print("Scraping:", u)
-
-#                         await page.goto(u, timeout=60000)
-#                         title, price, rating, desc, img = await scrape_amazon_item(page)
-
-#                         long_aff = (
-#                             f"https://www.amazon.in/dp/{product_id}?tag={AFFILIATE_TAG}"
-#                         )
-#                         short = shorten_link(long_aff)
-
-#                         text = (
-#                             f"<b>{title}</b>\n\n"
-#                             f"<b>💰 Price:</b> {price}\n"
-#                             f"<b>⭐ Rating:</b> {rating}\n\n"
-#                             f"<b></b>\n{desc[:600]}...\n\n"
-#                             f"<b>🔗 Buy Now:</b> {short}"
-#                         )
-
-#                         send_to_telegram(text, img)
-
-#                         save_product(
-#                             {
-#                                 "title": title,
-#                                 "price": price,
-#                                 "rating": rating,
-#                                 "affiliate_link": short,
-#                                 "time": str(datetime.now()),
-#                             }
-#                         )
-
-#                         scraped_ids.add(product_id)
-#                         await asyncio.sleep(8)
-
-#                     page_num += 1
-
-#             print("\\n[+] Sleeping 5 minutes…")
-#             await asyncio.sleep(300)
-
-
-# asyncio.run(main())
-
-
-# SCRAPED_FILE = "products.txt"
-# scraped_ids = set()
-
-# if os.path.exists(SCRAPED_FILE):
-#     with open(SCRAPED_FILE, "r", encoding="utf-8") as f:
-#         for line in f:
-#             try:
-#                 pid = eval(line).get("affiliate_link").split("/dp/")[1].split("/")[0]
-#                 scraped_ids.add(pid)
-#             except:
-#                 pass
-
-
-# def shorten_link(long_url):
-#     try:
-#         r = requests.get("https://tinyurl.com/api-create.php", params={"url": long_url})
-#         return r.text if r.status_code == 200 else long_url
-#     except:
-#         return long_url
-
-
-# def send_to_telegram(text, image_url=None):
-#     try:
-#         url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendPhoto"
-#         payload = {"chat_id": CHAT_ID, "caption": text, "parse_mode": "HTML"}
-#         files = {"photo": requests.get(image_url).content} if image_url else None
-#         requests.post(url, data=payload, files=files)
-#         print("[+] Posted to Telegram")
-#     except Exception as e:
-#         print("Telegram Error:", e)
-
-
-# def save_product(data):
 #     with open(SCRAPED_FILE, "a", encoding="utf-8") as f:
 #         f.write(str(data) + "\n")
 
 
-# async def scrape_amazon_item(page):
+# async def safe_goto(page, url, tries=3):
+#     for attempt in range(tries):
+#         try:
 
-#     async def safe(selector_list):
-#         for selector in selector_list:
+#             await page.goto(url, timeout=60000)
+#             return True
+#         except Exception as e:
+
+#             if attempt == tries - 1:
+#                 return False
+#             await asyncio.sleep(3)
+
+
+# async def scrape_amazon_item(page):
+#     async def safe(selectors):
+#         for sel in selectors:
 #             try:
-#                 txt = await page.inner_text(selector)
+#                 txt = await page.inner_text(sel)
 #                 if txt.strip():
 #                     return txt.strip()
 #             except:
 #                 continue
 #         return "Not Available"
 
-#     # ----- TITLE -----
-#     title = await safe(["#productTitle", "span#title", "h1.a-size-large"])
-
-#     # ----- PRICE -----
+#     title = await safe(["#productTitle"])
 #     price = await safe(
 #         [
 #             ".a-price .a-offscreen",
 #             ".priceToPay .a-offscreen",
 #             "#corePrice_feature_div .a-offscreen",
-#             "span.a-color-price",
-#             "span#priceblock_ourprice",
-#             "span#priceblock_dealprice",
 #         ]
 #     )
+#     rating = await safe(["span.a-icon-alt", "#acrPopover"])
+#     desc = await safe(["#feature-bullets"])
 
-#     # ----- RATING -----
-#     rating = await safe(
-#         ["span.a-icon-alt", "#acrPopover", "span#acrCustomerReviewText"]
-#     )
-
-#     # ----- DESCRIPTION -----
-#     desc = await safe(
-#         [
-#             "#feature-bullets",
-#             "#bookDescription_feature_div",
-#             "#dp-container .a-row.a-expander-container",
-#             "#detailBullets_feature_div",
-#             "#editorialReviews_feature_div",
-#         ]
-#     )
-
-#     # ----- IMAGE -----
 #     img = None
-#     for sel in [
-#         "#landingImage",
-#         ".imgTagWrapper img",
-#         "#imgBlkFront",
-#         ".a-dynamic-image",
-#     ]:
+#     for sel in ["#landingImage", ".imgTagWrapper img", ".a-dynamic-image"]:
 #         try:
 #             img = await page.get_attribute(sel, "src")
 #             if img:
@@ -603,22 +455,39 @@ CATEGORIES = [
 
 
 # async def main():
-#     print("[+] Starting Amazon Scraper on Railway…")
-
 #     async with async_playwright() as p:
-#         browser = await p.firefox.launch(headless=True)
-#         page = await browser.new_page()
 
-#         while True:
+#         # FIXED: No automationcontrolled issue
+#         browser = await p.firefox.launch(headless=True)
+
+#         page = await browser.new_page(
+#             user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+#         )
+
+#         start_time = datetime.now(timezone.utc)
+#         end_time = start_time + timedelta(hours=1)
+
+#         while datetime.now() < end_time:
+#             print(f"Starting new cycle at: {datetime.now()}")
+
 #             random.shuffle(CATEGORIES)
 
 #             for q in CATEGORIES:
-#                 print(f"\n[+] Category: {q}")
+#                 if datetime.now() >= end_time:
+#                     print("One-hour limit reached. Stopping...")
+#                     break
 
 #                 page_num = 1
+
 #                 while True:
+#                     if datetime.now() >= end_time:
+#                         break
+
 #                     search_url = f"https://www.amazon.in/s?k={q}&page={page_num}"
-#                     await page.goto(search_url, timeout=60000)
+#                     if not await safe_goto(page, search_url):
+#                         print("Skipping category due to page load failure.")
+#                         break
+
 #                     await page.evaluate(
 #                         "window.scrollBy(0, document.body.scrollHeight)"
 #                     )
@@ -645,10 +514,15 @@ CATEGORIES = [
 #                     random.shuffle(new_products)
 
 #                     for u in new_products:
-#                         product_id = u.split("/dp/")[1]
-#                         print("Scraping:", u)
+#                         if datetime.now() >= end_time:
+#                             break
 
-#                         await page.goto(u, timeout=60000)
+#                         product_id = u.split("/dp/")[1]
+
+#                         if not await safe_goto(page, u):
+
+#                             continue
+
 #                         title, price, rating, desc, img = await scrape_amazon_item(page)
 
 #                         long_aff = (
@@ -657,11 +531,8 @@ CATEGORIES = [
 #                         short = shorten_link(long_aff)
 
 #                         text = (
-#                             f"<b>{title}</b>\n\n"
-#                             f"<b>💰 Price:</b> {price}\n"
-#                             f"<b>⭐ Rating:</b> {rating}\n\n"
-#                             f"{desc[:600]}...\n\n"
-#                             f"<b>🔗 Buy Now:</b> {short}"
+#                             f"<b>{title}</b>\n\n<b>💰 Price:</b> {price}\n"
+#                             f"<b>⭐ Rating:</b> {rating}\n\n{desc[:600]}...\n\n<b>🔗 Buy Now:</b> {short}"
 #                         )
 
 #                         send_to_telegram(text, img)
@@ -680,22 +551,15 @@ CATEGORIES = [
 #                         await asyncio.sleep(8)
 
 #                     page_num += 1
-
-#             print("\n[+] Sleeping 5 minutes…")
-#             await asyncio.sleep(300)
+#             # await asyncio.sleep(300)
 
 
 # asyncio.run(main())
 
-#
-
-
 SCRAPED_FILE = "products.txt"
 scraped_ids = set()
 
-print("Script started...")
-print("Loading scraped product IDs...")
-
+# Load already scraped products to avoid duplicates
 if os.path.exists(SCRAPED_FILE):
     with open(SCRAPED_FILE, "r", encoding="utf-8") as f:
         for line in f:
@@ -705,57 +569,37 @@ if os.path.exists(SCRAPED_FILE):
             except:
                 pass
 
-print(f"Total old products loaded: {len(scraped_ids)}")
-
-
 def shorten_link(long_url):
     try:
-        print(f"Shortening: {long_url}")
         r = requests.get("https://tinyurl.com/api-create.php", params={"url": long_url})
         if r.status_code == 200:
-            print(f"Short URL created: {r.text}")
             return r.text
-        print("Shortener failed, returning long URL")
         return long_url
-    except Exception as e:
-        print("Shorten error:", e)
+    except Exception:
         return long_url
-
 
 def send_to_telegram(text, image_url=None):
     try:
-        print("Sending to Telegram...")
-        print("Image URL:", image_url)
-
         url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendPhoto"
         payload = {"chat_id": CHAT_ID, "caption": text, "parse_mode": "HTML"}
-
         files = {"photo": requests.get(image_url).content} if image_url else None
         r = requests.post(url, data=payload, files=files)
-        print("Telegram response:", r.status_code)
-
     except Exception as e:
         print("Telegram send error:", e)
 
-
 def save_product(data):
-    print("Saving product locally...")
     with open(SCRAPED_FILE, "a", encoding="utf-8") as f:
         f.write(str(data) + "\n")
-
 
 async def safe_goto(page, url, tries=3):
     for attempt in range(tries):
         try:
-            print(f"Opening: {url} (Attempt {attempt+1})")
             await page.goto(url, timeout=60000)
             return True
-        except Exception as e:
-            print(f"Goto failed: {e}")
+        except Exception:
             if attempt == tries - 1:
                 return False
             await asyncio.sleep(3)
-
 
 async def scrape_amazon_item(page):
     async def safe(selectors):
@@ -768,16 +612,8 @@ async def scrape_amazon_item(page):
                 continue
         return "Not Available"
 
-    print("Scraping product details...")
-
     title = await safe(["#productTitle"])
-    price = await safe(
-        [
-            ".a-price .a-offscreen",
-            ".priceToPay .a-offscreen",
-            "#corePrice_feature_div .a-offscreen",
-        ]
-    )
+    price = await safe([".a-price .a-offscreen", ".priceToPay .a-offscreen", "#corePrice_feature_div .a-offscreen"])
     rating = await safe(["span.a-icon-alt", "#acrPopover"])
     desc = await safe(["#feature-bullets"])
 
@@ -790,57 +626,55 @@ async def scrape_amazon_item(page):
         except:
             pass
 
-    print("Scraped:", title[:50])
     return title, price, rating, desc, img
 
-
 async def main():
-    print("Playwright starting...")
-
     async with async_playwright() as p:
-
-        # FIXED: No automationcontrolled issue
         browser = await p.firefox.launch(headless=True)
-
         page = await browser.new_page(
             user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
         )
 
         start_time = datetime.now()
-        end_time = start_time + timedelta(hours=1)
+        # Yahan use ho raha hai EXECUTION_HOURS variable jo upar define kiya hai
+        end_time = start_time + timedelta(hours=EXECUTION_HOURS) 
+        products_posted_count = 0
 
-        print("Run window:", start_time, "to", end_time)
+        print(f"🚀 Script started. Ends at: {end_time} OR after {MAX_PRODUCTS} products.")
 
-        while datetime.now() < end_time:
-            print(f"Starting new cycle at: {datetime.now()}")
-
+        while datetime.now() < end_time and products_posted_count < MAX_PRODUCTS:
+            
             random.shuffle(CATEGORIES)
 
             for q in CATEGORIES:
+                # 1. Global Time & Limit Check inside Category Loop
                 if datetime.now() >= end_time:
-                    print("One-hour limit reached. Stopping...")
+                    print("⏰ Time limit reached. Exiting...")
+                    break
+                
+                if products_posted_count >= MAX_PRODUCTS:
+                    print(f"✅ Limit reached: {products_posted_count} products posted. Exiting...")
                     break
 
-                print(f"\nSearching category: {q}")
                 page_num = 1
-
-                while True:
-                    if datetime.now() >= end_time:
+                
+                # Check limited pages per category to switch categories faster
+                while page_num <= 3: 
+                    # 2. Check limits again inside Page Loop
+                    if datetime.now() >= end_time or products_posted_count >= MAX_PRODUCTS:
                         break
 
+                    print(f"🔎 Searching: {q} | Page: {page_num}")
                     search_url = f"https://www.amazon.in/s?k={q}&page={page_num}"
+                    
                     if not await safe_goto(page, search_url):
                         print("Skipping category due to page load failure.")
                         break
 
-                    await page.evaluate(
-                        "window.scrollBy(0, document.body.scrollHeight)"
-                    )
+                    await page.evaluate("window.scrollBy(0, document.body.scrollHeight)")
                     await asyncio.sleep(2)
 
-                    links = await page.query_selector_all(
-                        "a.a-link-normal.s-no-outline"
-                    )
+                    links = await page.query_selector_all("a.a-link-normal.s-no-outline")
                     urls = []
 
                     for l in links:
@@ -849,63 +683,63 @@ async def main():
                             dp = href.split("/dp/")[1].split("/")[0]
                             urls.append(f"https://www.amazon.in/dp/{dp}")
 
-                    print(f"Found {len(urls)} product links")
-
-                    new_products = [
-                        u for u in urls if u.split("/dp/")[1] not in scraped_ids
-                    ]
-
-                    print("New products:", len(new_products))
+                    new_products = [u for u in urls if u.split("/dp/")[1] not in scraped_ids]
 
                     if not new_products:
-                        break
+                        print("No new products found on this page.")
+                        break # Move to next category if no new products
 
                     random.shuffle(new_products)
 
                     for u in new_products:
+                        # 3. Check limits again inside Product Loop (Most Critical)
                         if datetime.now() >= end_time:
+                            break
+                        if products_posted_count >= MAX_PRODUCTS:
                             break
 
                         product_id = u.split("/dp/")[1]
-                        print(f"\nOpening product page: {u}")
-
+                        
+                        print(f"Processing: {product_id}")
                         if not await safe_goto(page, u):
-                            print("Failed product page. Skipping...")
                             continue
 
                         title, price, rating, desc, img = await scrape_amazon_item(page)
 
-                        long_aff = (
-                            f"https://www.amazon.in/dp/{product_id}?tag={AFFILIATE_TAG}"
-                        )
+                        # Skip if price is not available
+                        if "Not Available" in price:
+                            continue
+
+                        long_aff = f"https://www.amazon.in/dp/{product_id}?tag={AFFILIATE_TAG}"
                         short = shorten_link(long_aff)
 
                         text = (
                             f"<b>{title}</b>\n\n<b>💰 Price:</b> {price}\n"
-                            f"<b>⭐ Rating:</b> {rating}\n\n{desc[:600]}...\n\n<b>🔗 Buy Now:</b> {short}"
+                            f"<b>⭐ Rating:</b> {rating}\n\n{desc[:300]}...\n\n<b>🔗 Buy Now:</b> {short}"
                         )
 
                         send_to_telegram(text, img)
+                        
+                        # Increment Count
+                        products_posted_count += 1
+                        print(f"✅ Posted Product #{products_posted_count}/{MAX_PRODUCTS}")
 
-                        save_product(
-                            {
-                                "title": title,
-                                "price": price,
-                                "rating": rating,
-                                "affiliate_link": short,
-                                "time": str(datetime.now()),
-                            }
-                        )
+                        save_product({
+                            "title": title, "price": price, "rating": rating,
+                            "affiliate_link": short, "time": str(datetime.now())
+                        })
 
                         scraped_ids.add(product_id)
-                        await asyncio.sleep(8)
+                        
+                        # Wait between posts to avoid spamming/ban
+                        await asyncio.sleep(10) 
 
                     page_num += 1
 
-            print("Sleeping 5 minutes before next cycle…")
-            await asyncio.sleep(300)
+            # End of Categories list, small sleep before restarting categories
+            await asyncio.sleep(5) 
 
+        await browser.close()
+        print(f"🏁 Script Finished. Total Posted: {products_posted_count}")
 
 asyncio.run(main())
-
-
