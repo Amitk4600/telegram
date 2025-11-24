@@ -14,9 +14,6 @@ print(f"Current UTC hour: {current_hour}")
 if current_hour != 9:
     print(f"⏭️ Not running. Allowed only at 9 AM UTC.")
     exit(0)
-TELEGRAM_TOKEN = "8390539844:AAHI9syLNNDQw4bSqyYHxJtnM4JDOqJWa2s"
-CHAT_ID = "@crystabloom"
-AFFILIATE_TAG = "crystabloom-21"
 
 # TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 # CHAT_ID = os.getenv("CHAT_ID")
